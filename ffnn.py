@@ -32,11 +32,11 @@ class FFNN(nn.Module):
 
     def forward(self, input_vector):
         # [to fill] obtain first hidden layer representation
-
+        hidden_layer = self.activation(self.W1(input_vector))
         # [to fill] obtain output layer representation
-
+        output_layer = self.W2(hidden_layer)
         # [to fill] obtain probability dist.
-
+        predicted_vector = self.softmax(output_layer)
         return predicted_vector
 
 
@@ -184,4 +184,35 @@ if __name__ == "__main__":
         print("Validation time for this epoch: {}".format(time.time() - start_time))
 
     # write out to results/test.out
+    print("========== Running on test data ==========")
+    model.eval()
+    
+    # Load test data if path is provided
+    if args.test_data != "to fill":
+        with open(args.test_data) as test_f:
+            test_data_raw = json.load(test_f)
+        
+        # Convert test data to same format
+        test_data = []
+        for elt in test_data_raw:
+            test_data.append((elt["text"].split(), int(elt["stars"] - 1)))
+        
+        # Vectorize test data
+        test_data_vectorized = convert_to_vector_representation(test_data, word2index)
+        
+        # Make predictions
+        predictions = []
+        for input_vector, gold_label in test_data_vectorized:
+            predicted_vector = model(input_vector)
+            predicted_label = torch.argmax(predicted_vector)
+            predictions.append(predicted_label.item())
+        
+        # Write predictions to file
+        os.makedirs("results", exist_ok=True)
+        with open("results/test.out", "w") as f:
+            for i, pred in enumerate(predictions):
+                f.write("{}\n".format(pred))
+        
+        print("Predictions written to results/test.out")
+        print("Total test examples: {}".format(len(predictions)))
     

@@ -31,13 +31,13 @@ class RNN(nn.Module):
 
     def forward(self, inputs):
         # [to fill] obtain hidden layer representation (https://pytorch.org/docs/stable/generated/torch.nn.RNN.html)
-        _, hidden = 
+        _, hidden = self.rnn(inputs)
         # [to fill] obtain output layer representations
-
+        output = self.W(hidden[-1])
         # [to fill] sum over output 
-
+        output = output.view(-1)
         # [to fill] obtain probability dist.
-
+        predicted_vector = self.softmax(output.view(1, -1))
         return predicted_vector
 
 
@@ -176,7 +176,39 @@ if __name__ == "__main__":
 
         epoch += 1
 
-
+    # write out to results/test.out
+    print("========== Running on test data ==========")
+    model.eval()
+    
+    # Load test data if path is provided
+    if args.test_data != "to fill":
+        with open(args.test_data) as test_f:
+            test_data_raw = json.load(test_f)
+        
+        # Convert test data to same format
+        test_data = []
+        for elt in test_data_raw:
+            test_data.append((elt["text"].split(), int(elt["stars"] - 1)))
+        
+        # Make predictions
+        predictions = []
+        for input_words, gold_label in test_data:
+            input_words = " ".join(input_words)
+            input_words = input_words.translate(input_words.maketrans("", "", string.punctuation)).split()
+            vectors = [word_embedding[i.lower()] if i.lower() in word_embedding.keys() else word_embedding['unk'] for i in input_words]
+            vectors = torch.tensor(vectors).view(len(vectors), 1, -1)
+            output = model(vectors)
+            predicted_label = torch.argmax(output)
+            predictions.append(predicted_label.item())
+        
+        # Write predictions to file
+        os.makedirs("results", exist_ok=True)
+        with open("results/test.out", "w") as f:
+            for i, pred in enumerate(predictions):
+                f.write("{}\n".format(pred))
+        
+        print("Predictions written to results/test.out")
+        print("Total test examples: {}".format(len(predictions)))
 
     # You may find it beneficial to keep track of training accuracy or training loss;
 
